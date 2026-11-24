@@ -1,0 +1,57 @@
+/* Smooth bottom-to-top bar & card transitions */
+@keyframes riseFromBottom {
+  0% {
+    transform: scaleY(0);
+    opacity: 0.25;
+  }
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cardRevealUp {
+  0% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.cos-rise-bar {
+  transform-origin: bottom center;
+  animation: riseFromBottom 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transition: transform 0.25s ease, filter 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cos-rise-bar:hover {
+  transform: scaleY(1.03) translateY(-2px);
+  filter: brightness(1.12);
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.28);
+}
+
+.cos-card-enter {
+  animation: cardRevealUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cos-card-enter:hover {
+  transform: translateY(-3px);
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+.cos-line-draw {
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: drawLineSmooth 1.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes drawLineSmooth {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
