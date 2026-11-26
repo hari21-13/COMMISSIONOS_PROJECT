@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Auron CommissionOS — full-stack edition
 
 | Layer | Technology |
@@ -127,3 +128,6 @@ UI↔column mapping and the demo data agree (no database needed).
 =======
 # Alpha_CommissionOS_Project
 >>>>>>> 7afcd225ca03b921536915945ea66c4930d68a86
+=======
+# COMMISSIONOS_PROJECT
+>>>>>>> f1625393d481d606b59584f68fd1c91d54f0c3e2
