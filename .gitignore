@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 node_modules/
 dist/
 .env
+=======
+﻿node_modules/
+dist/
+.env
+.env.local
+>>>>>>> ac7b9567d35bf08a51924c5c1d36b90a258527d2
 *.log
 .DS_Store

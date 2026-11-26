@@ -1,0 +1,16 @@
+# PostgreSQL for local development:   docker compose up -d
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: commissionos
+    ports:
+      - "5432:5432"
+    volumes:
+      - commissionos-data:/var/lib/postgresql/data
+
+volumes:
+  commissionos-data:

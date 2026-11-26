@@ -1,0 +1,384 @@
+// Auron CommissionOS — PostgreSQL schema (Prisma)
+//
+// Business tables use real typed columns for the important fields and an `extra`
+// JSON column for any additional fields the UI adds later, so no data is ever lost.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  url      = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  employee // limited edit access (own profile, raise disputes)
+  user // view-only access to everything the admin sees (can subscribe)
+}
+
+// ---------------------------------------------------------------- authentication
+
+model Account {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String    @default("")
+  role         Role      @default(user)
+  provider     String    @default("Email") // Email | Google | Invitation
+  status       String    @default("Active") // Active | Suspended
+  tokenVersion Int       @default(0)
+  loginCount   Int       @default(0)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  logins LoginActivity[]
+}
+
+model LoginActivity {
+  id        String   @id @default(cuid())
+  accountId String?
+  name      String
+  email     String
+  role      String
+  provider  String
+  page      String   @default("default")
+  time      DateTime @default(now())
+
+  account Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([time])
+  @@index([accountId])
+}
+
+model Invite {
+  id         String    @id @default(cuid())
+  token      String    @unique
+  email      String
+  name       String
+  role       String // e.g. "Salesperson", "Admin / Owner"
+  department String    @default("Sales")
+  orgName    String    @default("")
+  status     String    @default("Pending") // Pending | Accepted | Revoked
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@index([email])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String   @default("")
+  topic     String   @default("Other")
+  message   String
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- organisation
+
+model Organisation {
+  id                 Int      @id @default(1)
+  name               String   @default("")
+  legalEntity        String   @default("")
+  tagline            String   @default("")
+  industry           String   @default("")
+  gstin              String   @default("")
+  pan                String   @default("")
+  fiscalYear         String   @default("")
+  address            String   @default("")
+  upiId              String   @default("")
+  currency           String   @default("INR (₹)")
+  primaryColor       String   @default("#0A0A0B")
+  accentColor        String   @default("#DC2626")
+  logoIcon           String   @default("sparkles")
+  logoDataUrl        String   @default("")
+  calcFrequency      String   @default("Monthly")
+  tdsRate            Float    @default(5)
+  roundingRule       String   @default("Nearest Rupee")
+  autoHoldOnDispute  Boolean  @default(true)
+  autoLockOnApproval Boolean  @default(true)
+  clawbackDays       Float    @default(45)
+  extra              Json     @default("{}")
+  updatedAt          DateTime @updatedAt
+}
+
+model Subscription {
+  id              Int      @id @default(1)
+  planId          String   @default("starter")
+  billingCycle    String   @default("monthly")
+  status          String   @default("Active")
+  nextBillingDate String   @default("")
+  paymentMethod   String   @default("")
+  billingEmail    String   @default("")
+  extra           Json     @default("{}")
+  updatedAt       DateTime @updatedAt
+}
+
+model Department {
+  id           String   @id
+  name         String   @default("")
+  head         String   @default("")
+  members      Float    @default(1)
+  budgetTarget String   @default("")
+  extra        Json     @default("{}")
+  createdAt    DateTime @default(now())
+}
+
+// Team members invited from Organisation Settings (separate from login Accounts)
+model OrgUser {
+  id         String   @id
+  email      String   @default("")
+  name       String   @default("")
+  role       String   @default("Salesperson")
+  department String   @default("Sales")
+  status     String   @default("Invited")
+  extra      Json     @default("{}")
+  createdAt  DateTime @default(now())
+}
+
+model RolePermission {
+  role         String   @id
+  orgSettings  Boolean  @default(false)
+  billing      Boolean  @default(false)
+  policies     Boolean  @default(false)
+  transactions Boolean  @default(false)
+  calculate    Boolean  @default(false)
+  approve      Boolean  @default(false)
+  payouts      Boolean  @default(false)
+  reports      Boolean  @default(false)
+  extra        Json     @default("{}")
+  createdAt    DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- people & plans
+
+model Employee {
+  id                 String   @id
+  name               String   @default("")
+  email              String   @default("")
+  phone              String   @default("")
+  department         String   @default("")
+  branch             String   @default("")
+  manager            String   @default("")
+  joiningDate        String   @default("")
+  exitDate           String   @default("")
+  eligibility        String   @default("Active")
+  planId             String   @default("")
+  planName           String   @default("")
+  status             String   @default("Active")
+  type               String   @default("Employee")
+  monthlyTarget      Float    @default(0)
+  eligibleSales      Float    @default(0)
+  earnedCommission   Float    @default(0)
+  pendingCommission  Float    @default(0)
+  approvedCommission Float    @default(0)
+  paidCommission     Float    @default(0)
+  extra              Json     @default("{}")
+  createdAt          DateTime @default(now())
+
+  @@index([email])
+}
+
+model Policy {
+  id               String   @id
+  name             String   @default("")
+  modelCode        String   @default("A") // commission model A..G
+  modelLabel       String   @default("")
+  description      String   @default("")
+  rate             Float    @default(0)
+  fixedAmount      Float    @default(0)
+  tierMethod       String   @default("marginal")
+  targetAmount     Float    @default(0)
+  targetBonus      Float    @default(0)
+  referralRate     Float    @default(0)
+  eligibleGroup    String   @default("")
+  effectiveFrom    String   @default("")
+  effectiveTo      String   @default("")
+  reversalRule     String   @default("")
+  status           String   @default("Active")
+  version          String   @default("v1.0")
+  slabs            Json     @default("[]")
+  productRates     Json     @default("[]")
+  multiLevelSplits Json     @default("[]")
+  versions         Json     @default("[]")
+  extra            Json     @default("{}")
+  createdAt        DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- sales & commission
+
+model Transaction {
+  id            String   @id
+  invoiceNumber String   @default("")
+  customer      String   @default("")
+  product       String   @default("")
+  date          String   @default("")
+  invoiceAmount Float    @default(0)
+  discount      Float    @default(0)
+  eligibleBase  Float    @default(0)
+  salesperson   String   @default("")
+  salespersonId String   @default("")
+  department    String   @default("")
+  status        String   @default("Pending Validation")
+  referrer      String   @default("")
+  extra         Json     @default("{}")
+  createdAt     DateTime @default(now())
+
+  @@index([salespersonId])
+  @@index([status])
+}
+
+model Reversal {
+  id                  String   @id
+  transactionId       String   @default("")
+  invoiceNumber       String   @default("")
+  employee            String   @default("")
+  type                String   @default("")
+  originalSales       Float    @default(0)
+  originalCommission  Float    @default(0)
+  refundAmount        Float    @default(0)
+  reversedCommission  Float    @default(0)
+  remainingCommission Float    @default(0)
+  date                String   @default("")
+  reason              String   @default("")
+  status              String   @default("")
+  extra               Json     @default("{}")
+  createdAt           DateTime @default(now())
+}
+
+model Adjustment {
+  id          String   @id
+  employee    String   @default("")
+  statementId String   @default("")
+  type        String   @default("")
+  amount      Float    @default(0)
+  reason      String   @default("")
+  requestedBy String   @default("")
+  date        String   @default("")
+  status      String   @default("")
+  extra       Json     @default("{}")
+  createdAt   DateTime @default(now())
+}
+
+model Statement {
+  id              String   @id
+  employeeId      String   @default("")
+  employee        String   @default("")
+  department      String   @default("")
+  period          String   @default("")
+  eligibleSales   Float    @default(0)
+  commissionRate  String   @default("")
+  policyApplied   String   @default("")
+  grossCommission Float    @default(0)
+  reversals       Float    @default(0)
+  adjustments     Float    @default(0)
+  deductions      Float    @default(0)
+  netPayable      Float    @default(0)
+  submittedDate   String   @default("")
+  status          String   @default("Draft")
+  locked          Boolean  @default(false)
+  comments        Json     @default("[]")
+  extra           Json     @default("{}")
+  createdAt       DateTime @default(now())
+
+  @@index([employeeId])
+}
+
+model Payout {
+  id              String   @id
+  batchId         String   @default("")
+  statementId     String   @default("")
+  employee        String   @default("")
+  approvedAmount  Float    @default(0)
+  bankPaidAmount  Float    @default(0)
+  paymentDate     String   @default("")
+  paymentMethod   String   @default("")
+  referenceNumber String   @default("")
+  status          String   @default("")
+  extra           Json     @default("{}")
+  createdAt       DateTime @default(now())
+}
+
+model Dispute {
+  id            String   @id
+  employee      String   @default("")
+  statementId   String   @default("")
+  transactionId String   @default("")
+  claimedAmount Float    @default(0)
+  currentAmount Float    @default(0)
+  reason        String   @default("")
+  document      String   @default("")
+  assignedTo    String   @default("")
+  status        String   @default("Open")
+  createdDate   String   @default("")
+  comments      Json     @default("[]")
+  extra         Json     @default("{}")
+  createdAt     DateTime @default(now())
+}
+
+model CalcRun {
+  runId           String   @id
+  period          String   @default("")
+  scope           String   @default("")
+  timestamp       String   @default("")
+  totalSales      Float    @default(0)
+  totalCommission Float    @default(0)
+  exceptionsCount Float    @default(0)
+  status          String   @default("")
+  extra           Json     @default("{}")
+  createdAt       DateTime @default(now())
+}
+
+// ---------------------------------------------------------------- billing
+
+model BillingInvoice {
+  id        String   @id
+  date      String   @default("")
+  plan      String   @default("")
+  subtotal  Float    @default(0)
+  gst       Float    @default(0)
+  total     Float    @default(0)
+  status    String   @default("Paid")
+  method    String   @default("")
+  utr       String?  @unique // legacy manual UPI reference (no longer used)
+  source    String   @default("seed") // seed | free | razorpay
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  accountId  String?  // who paid
+  payerName  String   @default("")
+  payerEmail String   @default("")
+  extra     Json     @default("{}")
+  createdAt DateTime @default(now())
+}
+
+// One row per Razorpay order we create (so a payment can only be settled once, by its owner)
+model PaymentOrder {
+  id                String    @id @default(cuid())
+  razorpayOrderId   String    @unique
+  accountId         String
+  planId            String
+  cycle             String
+  email             String
+  amount            Int // in paise
+  currency          String    @default("INR")
+  kind              String    @default("checkout") // checkout | qr  (for qr, razorpayOrderId holds the Razorpay QR id)
+  qrImageUrl        String    @default("")
+  status            String    @default("created") // created | paid
+  razorpayPaymentId String?
+  createdAt         DateTime  @default(now())
+  paidAt            DateTime?
+
+  @@index([accountId])
+}
+
+// Small key/value store (e.g. the latest Commission Engine results snapshot)
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
