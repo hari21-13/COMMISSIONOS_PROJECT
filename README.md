@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 # Auron CommissionOS — full-stack edition
 
 | Layer | Technology |
@@ -125,9 +124,7 @@ UI↔column mapping and the demo data agree (no database needed).
 * The login token is kept in `localStorage` (business data is not). For stricter setups move it to an httpOnly cookie.
 * Reset: *Organisation Settings → Data & Backup* can download a JSON backup, restore one, or reset to demo data
   (login accounts are never touched).
-=======
 # Alpha_CommissionOS_Project
->>>>>>> 7afcd225ca03b921536915945ea66c4930d68a86
-=======
+
 # COMMISSIONOS_PROJECT
->>>>>>> f1625393d481d606b59584f68fd1c91d54f0c3e2
+
