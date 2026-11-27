@@ -5934,10 +5934,10 @@ const PAYMENT_PAYEE_NAME = "Alpha Auron";
 
 // ---- Support contact ----
 const SUPPORT_CONTACT = {
-  name: "Poojitha",
-  email: "poojitha@alphaauron.com",
-  phone: "7207642479",
-  phoneDisplay: "+91 72076 42479",
+  name: "Harika",
+  email: "harika2193@gmail.com",
+  phone: "9000029580",
+  phoneDisplay: "+91 9000029580",
   hours: "9:30 AM – 6:30 PM",
   days: "Monday to Friday",
 };
